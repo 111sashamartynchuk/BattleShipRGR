@@ -3,15 +3,23 @@ package battleship.model;
 public abstract class Player {
     protected String name;
     protected Board myBoard;
-    protected Board enemyBoard;
+    protected Board enemyBoard; // Це поле має бути!
 
     public Player(String name) {
         this.name = name;
         this.myBoard = new Board();
     }
 
+    public abstract Coordinate makeMove();
+
+    // GETTERS and SETTERS
+
     public void setEnemyBoard(Board enemyBoard) {
         this.enemyBoard = enemyBoard;
+    }
+
+    public Board getEnemyBoard() {
+        return enemyBoard;
     }
 
     public Board getMyBoard() {
@@ -21,7 +29,4 @@ public abstract class Player {
     public String getName() {
         return name;
     }
-
-    // головний метод, який буде відрізнятися у гравця та бота
-    public abstract Coordinate makeMove();
 }
