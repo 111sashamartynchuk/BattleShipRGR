@@ -7,26 +7,21 @@ import battleship.model.strategy.ShootingStrategy;
 public class ComputerPlayer extends Player {
     private final ShootingStrategy strategy;
 
-    // Dependency Injection - The strategy is passed into the constructor. This makes the ComputerPlayer flexible (Open/Closed Principle).
     public ComputerPlayer(String name, ShootingStrategy strategy) {
         super(name);
         this.strategy = strategy;
     }
 
-    public Coordinate makeMove() {
-        System.out.println(name + " is calculating target...");
+    protected Coordinate getCoordinatesFromInput() {
+        System.out.println(name + " is thinking...");
         try {
-            Thread.sleep(1000);
+            Thread.sleep(800);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
         Coordinate target = strategy.determineTarget(enemyBoard);
-        System.out.println(name + " fires at " + formatCoordinate(target));
+        System.out.println(name + " targets " + (char)('A' + target.getX()) + (target.getY() + 1));
         return target;
-    }
-
-    private String formatCoordinate(Coordinate c) {
-        return (char)('A' + c.getX()) + "" + (c.getY() + 1);
     }
 }

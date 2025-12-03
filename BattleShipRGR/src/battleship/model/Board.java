@@ -5,10 +5,13 @@ import battleship.exception.InvalidCoordinateException;
 import battleship.exception.ShipOverlapException;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-public class Board {
-    public static final int SIZE = 10;
+//Represents the game board. Implements Iterable (Behavioral Pattern) to allow easy traversal of ships.
+
+public class Board implements Iterable<Ship> {
+    public static final int SIZE = 10; // In real app, could take from GameSettings
 
     private final List<Ship> ships;
     private final List<Coordinate> misses;
@@ -20,8 +23,13 @@ public class Board {
         this.hits = new ArrayList<>();
     }
 
-    public void placeShip(Ship ship) throws BattleshipException {
+    //Iterator Pattern implementation.
 
+    public Iterator<Ship> iterator() {
+        return ships.iterator();
+    }
+
+    public void placeShip(Ship ship) throws BattleshipException {
         for (Coordinate coord : ship.getCoordinates()) {
             if (!isValidCoordinate(coord)) {
                 throw new InvalidCoordinateException("Ship is out of bounds at: " + coord);
@@ -30,7 +38,6 @@ public class Board {
                 throw new ShipOverlapException("Position occupied at: " + coord);
             }
         }
-
         ships.add(ship);
     }
 
