@@ -3,27 +3,33 @@ package battleship.model;
 import battleship.exception.BattleshipException;
 import battleship.exception.InvalidCoordinateException;
 import battleship.exception.ShipOverlapException;
+import battleship.observer.GameObserver; // Add import
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-//Represents the game board. Implements Iterable (Behavioral Pattern) to allow easy traversal of ships.
-
 public class Board implements Iterable<Ship> {
-    public static final int SIZE = 10; // In real app, could take from GameSettings
+    public static final int SIZE = 10;
 
     private final List<Ship> ships;
     private final List<Coordinate> misses;
     private final List<Coordinate> hits;
 
+    // NEW List of observers
+    private final List<GameObserver> observers;
+
     public Board() {
         this.ships = new ArrayList<>();
         this.misses = new ArrayList<>();
         this.hits = new ArrayList<>();
+        this.observers = new ArrayList<>();
     }
 
-    //Iterator Pattern implementation.
+    // NEW Method to attach observers
+    public void addObserver(GameObserver observer) {
+        observers.add(observer);
+    }
 
     public Iterator<Ship> iterator() {
         return ships.iterator();
@@ -41,7 +47,9 @@ public class Board implements Iterable<Ship> {
         ships.add(ship);
     }
 
-    public boolean receiveAttack(Coordinate coordinate) throws InvalidCoordinateException {
+    // UPDATED: Now accepts attackerName to notify observers properly.
+
+    public boolean receiveAttack(Coordinate coordinate, String attackerName) throws InvalidCoordinateException {
         if (!isValidCoordinate(coordinate)) {
             throw new InvalidCoordinateException("Shot out of bounds: " + coordinate);
         }
@@ -50,12 +58,38 @@ public class Board implements Iterable<Ship> {
             if (ship.occupies(coordinate)) {
                 ship.hit(coordinate);
                 hits.add(coordinate);
+
+                notifyHit(coordinate, attackerName);
+
+                if (!ship.isAlive()) {
+                    notifySunk(ship.getName(), attackerName);
+                }
                 return true;
             }
         }
 
         misses.add(coordinate);
+        notifyMiss(coordinate, attackerName);
         return false;
+    }
+
+    // Notification Helpers
+    private void notifyHit(Coordinate c, String name) {
+        for (GameObserver o : observers) o.onHit(c, name);
+    }
+
+    private void notifyMiss(Coordinate c, String name) {
+        for (GameObserver o : observers) o.onMiss(c, name);
+    }
+
+    private void notifySunk(String shipName, String playerName) {
+        for (GameObserver o : observers) o.onShipSunk(shipName, playerName);
+    }
+
+    // Old validation methods remain unchanged
+    public boolean receiveAttack(Coordinate c) throws InvalidCoordinateException {
+        // Overload for backward compatibility/testing if needed
+        return receiveAttack(c, "Unknown");
     }
 
     public boolean isValidCoordinate(Coordinate c) {
