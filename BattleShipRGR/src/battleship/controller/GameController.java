@@ -8,9 +8,9 @@ import battleship.model.Ship;
 import battleship.model.ShipType;
 import battleship.model.factory.StandardShipFactory;
 import battleship.model.player.ComputerPlayer;
-import battleship.model.player.HumanPlayer;
 import battleship.observer.ConsoleObserver;
 import battleship.util.GameSettings;
+import battleship.util.InputUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,22 +41,20 @@ public class GameController {
         player2.getEnemyBoard().addObserver(consoleObserver);
 
         if (GameSettings.getInstance().isDebugMode()) {
-            System.out.println("[DEBUG] Game Controller initialized via Builder.");
+            System.out.println("[DEBUG] Game Controller initialized.");
         }
     }
 
     public void startGame() {
-        System.out.println("=== BATTLESHIP GAME ===");
+        System.out.println("===  BATTLESHIP GAME  ===");
 
-        // Setup Phase
+        System.out.println("\n---  FLEET DEPLOYMENT PHASE ---");
         setupBoardForPlayer(player1);
         setupBoardForPlayer(player2);
 
-        // Battle Loop
+        System.out.println("\n---  BATTLE START  ---");
         boolean gameOver = false;
         Player currentPlayer = player1;
-
-        System.out.println("\n--- BATTLE START ---");
 
         while (!gameOver) {
             System.out.println("\n--- Turn: " + currentPlayer.getName() + " ---");
@@ -71,28 +69,26 @@ public class GameController {
         }
     }
 
-    //  Логіка розстановки
     private void setupBoardForPlayer(Player player) {
         System.out.println("\nPreparing fleet for: " + player.getName());
         Board board = player.getMyBoard();
 
         if (player instanceof ComputerPlayer) {
+            System.out.println("AI is deploying ships...");
             placeShipsRandomly(board);
-            System.out.println(player.getName() + " has deployed ships.");
+            System.out.println("AI ships deployed.");
         } else {
-
             placeShipsManually(board);
         }
     }
 
     private void placeShipsManually(Board board) {
-        // Проходимо по всіх типах кораблів
         for (ShipType type : ShipType.values()) {
             boolean placed = false;
             while (!placed) {
                 try {
                     System.out.println("Place " + type.getName() + " (Size: " + type.getSize() + ")");
-                    System.out.println("Enter format: START_COORD DIRECTION (e.g., A1 H or A1 V):");
+                    System.out.println("Enter format: START_COORD DIRECTION (e.g., 'A1 H' or 'B2 V'):");
 
                     String line = reader.readLine();
                     List<Coordinate> coords = parsePlacementInput(line, type.getSize());
@@ -100,10 +96,12 @@ public class GameController {
                     Ship ship = shipFactory.createShip(type, coords);
                     board.placeShip(ship);
                     placed = true;
-                    System.out.println("Successfully placed " + type.getName());
+                    System.out.println(" " + type.getName() + " placed.");
 
-                } catch (BattleshipException | IllegalArgumentException | IOException e) {
-                    System.out.println(" Invalid placement: " + e.getMessage() + ". Try again.");
+                } catch (BattleshipException e) {
+                    System.out.println(" Placement Error: " + e.getMessage());
+                } catch (IllegalArgumentException | IOException e) {
+                    System.out.println(" Invalid Input: " + e.getMessage());
                 }
             }
         }
@@ -113,7 +111,8 @@ public class GameController {
         Random random = new Random();
         for (ShipType type : ShipType.values()) {
             boolean placed = false;
-            while (!placed) {
+            int attempts = 0;
+            while (!placed && attempts < 100) {
                 try {
                     int x = random.nextInt(Board.SIZE);
                     int y = random.nextInt(Board.SIZE);
@@ -124,19 +123,22 @@ public class GameController {
                     board.placeShip(ship);
                     placed = true;
                 } catch (BattleshipException | IllegalArgumentException e) {
+                    attempts++;
                 }
             }
         }
     }
 
-    // Helper to parse "A1 H" -> List<Coordinate>
     private List<Coordinate> parsePlacementInput(String input, int size) {
+        if (input == null || input.trim().isEmpty()) throw new IllegalArgumentException("Empty input");
+
         String[] parts = input.trim().toUpperCase().split("\\s+");
-        if (parts.length < 2) throw new IllegalArgumentException("Missing direction (H/V)");
+        if (parts.length < 2) throw new IllegalArgumentException("Missing direction (H or V)");
 
-        Coordinate start = parseCoordinate(parts[0]);
+        // REFACTORING: Using InputUtils
+        Coordinate start = InputUtils.parseCoordinate(parts[0]);
+
         boolean horizontal = parts[1].startsWith("H");
-
         return generateCoordinates(start, size, horizontal);
     }
 
@@ -149,13 +151,7 @@ public class GameController {
         }
         return coords;
     }
-    private Coordinate parseCoordinate(String input) {
-        if (input.length() < 2) throw new IllegalArgumentException("Coord too short");
-        char colChar = input.charAt(0);
-        int row = Integer.parseInt(input.substring(1)) - 1;
-        int col = colChar - 'A';
-        return new Coordinate(col, row);
-    }
+
 
     private void playTurn(Player player) {
         boolean validTurn = false;
@@ -174,7 +170,7 @@ public class GameController {
                     validTurn = true;
                 }
             } catch (BattleshipException e) {
-                System.out.println("️ Error: " + e.getMessage());
+                System.out.println(" Error: " + e.getMessage());
                 if (player instanceof ComputerPlayer) validTurn = true;
             }
         }
