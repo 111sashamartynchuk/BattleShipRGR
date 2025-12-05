@@ -1,4 +1,7 @@
 package battleship.model;
+//Implements Template Method Pattern in {#performMove()}
+// to define the skeleton of the move algorithm,
+// delegating specific implementation to subclasses via {#getCoordinatesFromInput()}.
 
 public abstract class Player {
     protected String name;
@@ -12,13 +15,8 @@ public abstract class Player {
 
     //Template Method (Behavioral Pattern). Defines the skeleton of a move.
     public final Coordinate performMove() {
-        // Common logic can go here (e.g., logging, timer start)
-        // System.out.println(name + " is preparing to fire...");
 
-        // The specific step delegated to subclasses
-        Coordinate target = getCoordinatesFromInput();
-
-        return target;
+        return getCoordinatesFromInput();
     }
 
     //The primitive operation that subclasses must implement. Was previously named 'makeMove'.

@@ -7,6 +7,8 @@ import battleship.model.ship.*;
 
 import java.util.List;
 
+//Concrete implementation of ShipFactory.
+// Implements Factory Method Pattern to encapsulate ship creation logic.
 public class StandardShipFactory implements ShipFactory {
 
     public Ship createShip(ShipType type, List<Coordinate> coordinates) {

@@ -7,7 +7,9 @@ import battleship.model.Player;
 import battleship.model.strategy.RandomShootingStrategy;
 import battleship.model.strategy.ShootingStrategy;
 
-//Builder Pattern (Creational). Separates the construction of the complex GameController object from its representation.
+
+// * Implements Builder Pattern (Creational).
+// *Encapsulates the construction of the GameController and its dependencies.
 public class GameBuilder {
     private Player player1;
     private Player player2;

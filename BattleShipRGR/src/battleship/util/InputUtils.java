@@ -2,7 +2,10 @@ package battleship.util;
 
 import battleship.model.Coordinate;
 
-//Implements GRASP Pure Fabrication pattern to avoid code duplication
+//Implements GRASP Pure Fabrication pattern.
+// This class is a "fabrication"
+// created to support high cohesion and low coupling by removing parsing logic from
+// Player and Controller classes (DRY Principle).
 
 public class InputUtils {
 
@@ -24,7 +27,7 @@ public class InputUtils {
 
         try {
             String numPart = cleanInput.substring(1);
-            int row = Integer.parseInt(numPart) - 1; 
+            int row = Integer.parseInt(numPart) - 1;
 
             if (row < 0 || row > 9) {
                 throw new IllegalArgumentException("Row " + (row + 1) + " is out of bounds.");

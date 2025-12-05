@@ -8,7 +8,10 @@ import battleship.observer.GameObserver; // Add import
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+//Represents the 10x10 game board. Patterns implemented:
+// GRASP Information Expert: Board knows ships and coordinates, so it handles validation.
+// Iterator: Implements { Iterable} to traverse ships.
+// Observer (Subject): Notifies observers about game events (Hit/Miss).
 public class Board implements Iterable<Ship> {
     public static final int SIZE = 10;
 

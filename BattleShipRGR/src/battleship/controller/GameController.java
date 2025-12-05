@@ -19,6 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+
+//The main controller of the game (implements GRASP Controller pattern).
+// This class is responsible for handling system events, coordinating the game flow,
+// managing turns, and mediating interaction between Models (Player, Board)
+// and View (ConsoleObserver
+
 public class GameController {
     private final Player player1;
     private final Player player2;
@@ -37,6 +43,7 @@ public class GameController {
         player1.setEnemyBoard(player2.getMyBoard());
         player2.setEnemyBoard(player1.getMyBoard());
 
+// Register Observers (GRASP Low Coupling)
         player1.getEnemyBoard().addObserver(consoleObserver);
         player2.getEnemyBoard().addObserver(consoleObserver);
 
@@ -135,7 +142,6 @@ public class GameController {
         String[] parts = input.trim().toUpperCase().split("\\s+");
         if (parts.length < 2) throw new IllegalArgumentException("Missing direction (H or V)");
 
-        // REFACTORING: Using InputUtils
         Coordinate start = InputUtils.parseCoordinate(parts[0]);
 
         boolean horizontal = parts[1].startsWith("H");

@@ -11,20 +11,26 @@ import battleship.model.factory.StandardShipFactory;
 
 import java.util.Arrays;
 
+
+//Test Runner to demonstrate TDD (Test-Driven Development).
+// This class verifies the core logic of the game (Board validation, Ship creation,
+// Shooting mechanics) independently of the User Interface.
+// It proves that the model logic is robust and handles exceptions correctly.
+
 public class BattleshipTest {
 
     public static void main(String[] args) {
-        System.out.println("=== RUNNING BATTLESHIP TDD SUITE ===");
+        System.out.println("RUNNING BATTLESHIP TDD SUITE");
         int passed = 0;
         int failed = 0;
 
         // Test 1: Valid Placement
         try {
             testValidShipPlacement();
-            System.out.println("testValidShipPlacement: PASSED");
+            System.out.println(" testValidShipPlacement: PASSED");
             passed++;
         } catch (Exception e) {
-            System.err.println("testValidShipPlacement: FAILED - " + e.getMessage());
+            System.err.println(" testValidShipPlacement: FAILED - " + e.getMessage());
             e.printStackTrace();
             failed++;
         }
@@ -32,41 +38,42 @@ public class BattleshipTest {
         // Test 2: Boundary Check (Out of bounds)
         try {
             testOutOfBoundsPlacement();
-            System.out.println("testOutOfBoundsPlacement: PASSED");
+            System.out.println(" testOutOfBoundsPlacement: PASSED");
             passed++;
         } catch (Exception e) {
-            System.err.println("testOutOfBoundsPlacement: FAILED - " + e.getMessage());
+            System.err.println(" testOutOfBoundsPlacement: FAILED - " + e.getMessage());
             failed++;
         }
 
         // Test 3: Overlap Check
         try {
             testOverlappingShips();
-            System.out.println("testOverlappingShips: PASSED");
+            System.out.println(" testOverlappingShips: PASSED");
             passed++;
         } catch (Exception e) {
-            System.err.println("testOverlappingShips: FAILED - " + e.getMessage());
+            System.err.println(" testOverlappingShips: FAILED - " + e.getMessage());
             failed++;
         }
 
         // Test 4: Shooting Mechanics
         try {
             testShootingAndSinking();
-            System.out.println("testShootingAndSinking: PASSED");
+            System.out.println(" testShootingAndSinking: PASSED");
             passed++;
         } catch (Exception e) {
-            System.err.println("testShootingAndSinking: FAILED - " + e.getMessage());
+            System.err.println(" testShootingAndSinking: FAILED - " + e.getMessage());
             e.printStackTrace();
             failed++;
         }
+
         System.out.println("SUMMARY: Passed: " + passed + " | Failed: " + failed);
     }
 
-    // --- TEST CASES ---
+    //  TEST CASES
 
     private static void testValidShipPlacement() throws BattleshipException {
         Board board = new Board();
-        // Create a Destroyer (Size 2) using helper
+        // Create a Destroyer (Size 2)
         Ship ship = createTestShip(new Coordinate(0, 0), new Coordinate(0, 1));
 
         board.placeShip(ship);
@@ -88,6 +95,7 @@ public class BattleshipTest {
             board.placeShip(ship);
             throw new RuntimeException("Expected InvalidCoordinateException was NOT thrown for out-of-bounds ship.");
         } catch (InvalidCoordinateException e) {
+            // Expected behavior
         } catch (BattleshipException e) {
             throw new RuntimeException("Wrong exception type thrown: " + e.getClass().getSimpleName());
         }
@@ -106,6 +114,7 @@ public class BattleshipTest {
             board.placeShip(ship2);
             throw new RuntimeException("Expected ShipOverlapException was NOT thrown for overlapping ships.");
         } catch (ShipOverlapException e) {
+            // Expected behavior
         }
     }
 
@@ -118,33 +127,34 @@ public class BattleshipTest {
         board.placeShip(ship);
 
         // 1. Shoot and Miss
-        boolean hit = board.receiveAttack(new Coordinate(0, 0)); // Old signature for Commit 4
+        boolean hit = board.receiveAttack(new Coordinate(0, 0), "Tester");
         if (hit) throw new RuntimeException("Shot at (0,0) should be a miss.");
 
         // 2. Shoot and Hit (Deck 1)
-        hit = board.receiveAttack(bow);
+        hit = board.receiveAttack(bow, "Tester");
         if (!hit) throw new RuntimeException("Shot at (5,5) should be a hit.");
         if (!ship.isAlive()) throw new RuntimeException("Ship should still be alive after 1 hit (size 2).");
 
-        // 3. Shoot and Hit (Deck 2) – Sink
-        hit = board.receiveAttack(stern);
+        // 3. Shoot and Hit (Deck 2) - Sink
+        hit = board.receiveAttack(stern, "Tester");
         if (!hit) throw new RuntimeException("Shot at (5,6) should be a hit.");
         if (ship.isAlive()) throw new RuntimeException("Ship should be sunk after all decks are hit.");
+
+        if (!board.allShipsSunk()) throw new RuntimeException("Board should report all ships sunk.");
     }
+
+    //Helper to create a ship using the Factory.
 
     private static Ship createTestShip(Coordinate... coords) {
         StandardShipFactory factory = new StandardShipFactory();
-
-        // Determine type based on size for testing purposes
         ShipType type;
         switch (coords.length) {
             case 4: type = ShipType.BATTLESHIP; break;
             case 3: type = ShipType.CRUISER; break;
             case 2: type = ShipType.DESTROYER; break;
             case 1: type = ShipType.SUBMARINE; break;
-            default: throw new IllegalArgumentException("Unsupported test ship size: " + coords.length);
+            default: throw new IllegalArgumentException("Unsupported test ship size");
         }
-
         return factory.createShip(type, Arrays.asList(coords));
     }
 }
