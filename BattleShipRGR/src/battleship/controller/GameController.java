@@ -8,23 +8,28 @@ import battleship.model.Ship;
 import battleship.model.ShipType;
 import battleship.model.factory.StandardShipFactory;
 import battleship.model.player.ComputerPlayer;
+import battleship.model.player.HumanPlayer;
 import battleship.observer.ConsoleObserver;
 import battleship.util.GameSettings;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class GameController {
     private final Player player1;
     private final Player player2;
     private final StandardShipFactory shipFactory;
-    private final ConsoleObserver consoleObserver; // View component
-
-    //Constructor now accepts players (Dependency Injection via Builder).
+    private final ConsoleObserver consoleObserver;
+    private final BufferedReader reader;
 
     public GameController(Player p1, Player p2) {
         this.shipFactory = new StandardShipFactory();
         this.consoleObserver = new ConsoleObserver();
+        this.reader = new BufferedReader(new InputStreamReader(System.in));
 
         this.player1 = p1;
         this.player2 = p2;
@@ -32,7 +37,6 @@ public class GameController {
         player1.setEnemyBoard(player2.getMyBoard());
         player2.setEnemyBoard(player1.getMyBoard());
 
-        // Register Observers (GRASP: Low Coupling - Board doesn't know about Controller)
         player1.getEnemyBoard().addObserver(consoleObserver);
         player2.getEnemyBoard().addObserver(consoleObserver);
 
@@ -44,12 +48,15 @@ public class GameController {
     public void startGame() {
         System.out.println("=== BATTLESHIP GAME ===");
 
-        System.out.println("Deploying ships...");
-        placeDemoShips(player1.getMyBoard());
-        placeDemoShips(player2.getMyBoard());
+        // Setup Phase
+        setupBoardForPlayer(player1);
+        setupBoardForPlayer(player2);
 
+        // Battle Loop
         boolean gameOver = false;
         Player currentPlayer = player1;
+
+        System.out.println("\n--- BATTLE START ---");
 
         while (!gameOver) {
             System.out.println("\n--- Turn: " + currentPlayer.getName() + " ---");
@@ -64,46 +71,112 @@ public class GameController {
         }
     }
 
+    //  Логіка розстановки
+    private void setupBoardForPlayer(Player player) {
+        System.out.println("\nPreparing fleet for: " + player.getName());
+        Board board = player.getMyBoard();
+
+        if (player instanceof ComputerPlayer) {
+            placeShipsRandomly(board);
+            System.out.println(player.getName() + " has deployed ships.");
+        } else {
+
+            placeShipsManually(board);
+        }
+    }
+
+    private void placeShipsManually(Board board) {
+        // Проходимо по всіх типах кораблів
+        for (ShipType type : ShipType.values()) {
+            boolean placed = false;
+            while (!placed) {
+                try {
+                    System.out.println("Place " + type.getName() + " (Size: " + type.getSize() + ")");
+                    System.out.println("Enter format: START_COORD DIRECTION (e.g., A1 H or A1 V):");
+
+                    String line = reader.readLine();
+                    List<Coordinate> coords = parsePlacementInput(line, type.getSize());
+
+                    Ship ship = shipFactory.createShip(type, coords);
+                    board.placeShip(ship);
+                    placed = true;
+                    System.out.println("Successfully placed " + type.getName());
+
+                } catch (BattleshipException | IllegalArgumentException | IOException e) {
+                    System.out.println(" Invalid placement: " + e.getMessage() + ". Try again.");
+                }
+            }
+        }
+    }
+
+    private void placeShipsRandomly(Board board) {
+        Random random = new Random();
+        for (ShipType type : ShipType.values()) {
+            boolean placed = false;
+            while (!placed) {
+                try {
+                    int x = random.nextInt(Board.SIZE);
+                    int y = random.nextInt(Board.SIZE);
+                    boolean horizontal = random.nextBoolean();
+
+                    List<Coordinate> coords = generateCoordinates(new Coordinate(x, y), type.getSize(), horizontal);
+                    Ship ship = shipFactory.createShip(type, coords);
+                    board.placeShip(ship);
+                    placed = true;
+                } catch (BattleshipException | IllegalArgumentException e) {
+                }
+            }
+        }
+    }
+
+    // Helper to parse "A1 H" -> List<Coordinate>
+    private List<Coordinate> parsePlacementInput(String input, int size) {
+        String[] parts = input.trim().toUpperCase().split("\\s+");
+        if (parts.length < 2) throw new IllegalArgumentException("Missing direction (H/V)");
+
+        Coordinate start = parseCoordinate(parts[0]);
+        boolean horizontal = parts[1].startsWith("H");
+
+        return generateCoordinates(start, size, horizontal);
+    }
+
+    private List<Coordinate> generateCoordinates(Coordinate start, int size, boolean horizontal) {
+        List<Coordinate> coords = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            int x = horizontal ? start.getX() + i : start.getX();
+            int y = horizontal ? start.getY() : start.getY() + i;
+            coords.add(new Coordinate(x, y));
+        }
+        return coords;
+    }
+    private Coordinate parseCoordinate(String input) {
+        if (input.length() < 2) throw new IllegalArgumentException("Coord too short");
+        char colChar = input.charAt(0);
+        int row = Integer.parseInt(input.substring(1)) - 1;
+        int col = colChar - 'A';
+        return new Coordinate(col, row);
+    }
+
     private void playTurn(Player player) {
         boolean validTurn = false;
         while (!validTurn) {
             try {
                 Coordinate target = player.performMove();
-
-                // Pass player name to board so Observer can print who attacked
                 boolean hit = player.getEnemyBoard().receiveAttack(target, player.getName());
 
                 if (hit) {
                     if (player.getEnemyBoard().allShipsSunk()) {
                         validTurn = true;
                     } else {
-                        System.out.println(">> Bonus turn!"); // Game flow message, allowed in controller
+                        System.out.println(">> Bonus turn!");
                     }
                 } else {
                     validTurn = true;
                 }
-
             } catch (BattleshipException e) {
-                System.out.println(" Error: " + e.getMessage());
+                System.out.println("️ Error: " + e.getMessage());
                 if (player instanceof ComputerPlayer) validTurn = true;
             }
-        }
-    }
-
-    private void placeDemoShips(Board board) {
-        try {
-            List<Coordinate> coords1 = new ArrayList<>();
-            coords1.add(new Coordinate(0, 0));
-            coords1.add(new Coordinate(0, 1));
-            Ship destroyer = shipFactory.createShip(ShipType.DESTROYER, coords1);
-            board.placeShip(destroyer);
-
-            List<Coordinate> coords2 = new ArrayList<>();
-            coords2.add(new Coordinate(4, 4));
-            Ship sub = shipFactory.createShip(ShipType.SUBMARINE, coords2);
-            board.placeShip(sub);
-        } catch (BattleshipException e) {
-            System.err.println("Setup failed: " + e.getMessage());
         }
     }
 }
